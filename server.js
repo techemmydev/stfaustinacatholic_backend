@@ -56,9 +56,9 @@ app.use(
 app.use(cookieParser());
 
 // Health Check Route (useful for monitoring)
-app.get("/health", (req, res) => {
-  res.status(200).json({ status: "ok", timestamp: new Date().toISOString() });
-});
+// app.get("/health", (req, res) => {
+//   res.status(200).json({ status: "ok", timestamp: new Date().toISOString() });
+// });
 
 // API Routes
 app.use("/api", authRoutes);

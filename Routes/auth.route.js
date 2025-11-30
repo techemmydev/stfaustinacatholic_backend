@@ -1,22 +1,48 @@
 import express from "express";
-import { BookForAnEvent } from "../controllers/bookEvent.js";
-import { getAllHalls } from "../controllers/hallController.js";
-import { postHall } from "../controllers/hallController.js";
-import { submitContactForm } from "../controllers/submitContactForm.js";
-import { Subscribers } from "../controllers/SubsscribersController.js";
+
 import {
-  getAllFeedbacks,
-  postFeedback,
-} from "../controllers/FeedbacController.js";
+  getAllMembers,
+  getMemberById,
+  createMember,
+  updateMember,
+  deleteMember,
+  updateMemberRole,
+  getParishStats,
+  exportMembers,
+} from "../controllers/adminController.js";
+
+import { register, login, logout } from "../controllers/authController.js";
+import {
+  getMyProfile,
+  updateMyProfile,
+  changePassword,
+  deleteMyAccount,
+} from "../controllers/userController.js";
+
 import { getcookies, postcookies } from "../controllers/CookiesConsnt.js";
 const router = express.Router();
-router.post("/bookings", BookForAnEvent); // GET /api/booking
-router.get("/gethalls", getAllHalls); // GET /api/gethalls
-router.post("/posthall", postHall); // POST /api/posthall
-router.post("/contact", submitContactForm);
-router.post("/subscribe", Subscribers);
-router.get("/feedbacks", getAllFeedbacks);
-router.post("/feedback", postFeedback);
+// Auth Routes
+router.post("/register", register);
+router.post("/login", login);
+router.post("/logout", logout);
+
+// Admin Routes
+router.get("/admin/members", getAllMembers);
+router.get("/admin/members/:id", getMemberById);
+router.post("/admin/members", createMember);
+router.put("/admin/members/:id", updateMember);
+router.delete("/admin/members/:id", deleteMember);
+router.put("/admin/members/:id/role", updateMemberRole);
+router.get("/admin/stats", getParishStats);
+router.get("/admin/export", exportMembers);
+
+// Hall Routes
+router.get("/me", getMyProfile);
+router.put("/me", updateMyProfile);
+router.put("/me/password", changePassword);
+router.delete("/me", deleteMyAccount);
+
+// Cookie Consent Routes
 router.get("/cookies", getcookies);
 router.post("/cookies", postcookies);
 
