@@ -26,4 +26,4 @@ const parishSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
-export default mongoose.model("Parish", parishSchema);
+export default mongoose.model("ParishRegistration", parishSchema);

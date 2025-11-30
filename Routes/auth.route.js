@@ -11,7 +11,13 @@ import {
   exportMembers,
 } from "../controllers/adminController.js";
 
-import { register, login, logout } from "../controllers/authController.js";
+import {
+  register,
+  login,
+  logout,
+  adminRegister,
+  adminLogin,
+} from "../controllers/authController.js";
 import {
   getMyProfile,
   updateMyProfile,
@@ -24,6 +30,9 @@ const router = express.Router();
 // Auth Routes
 router.post("/register", register);
 router.post("/login", login);
+router.post("/admin/register", adminRegister);
+router.post("/admin/login", adminLogin);
+
 router.post("/logout", logout);
 
 // Admin Routes
