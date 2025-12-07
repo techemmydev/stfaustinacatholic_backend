@@ -1,20 +1,22 @@
 // controllers/userController.js
+
+/**
+ * 1. changePassword:
+ *    - Allows the logged-in member to change their password.
+ *    - Requires both the current password and a new password.
+ *    - Verifies the current password using bcrypt.
+ *    - If correct, hashes the new password and securely updates it.
+ *    - Returns a success message once the password is changed.
+ *
+ * 2. updateMyProfile:
+ *    - Lets the logged-in member update their personal profile details.
+ *    - Blocks changes to restricted fields such as email and role.
+ *    - If a new password is included, it is automatically hashed before saving.
+ *    - Saves and returns the updated member profile without exposing the password.
+ */
+
 import Parish from "../models/UserparishSchema.js";
-import bcrypt from "bcryptjs";
-
-// Get logged-in member's profile
-export const getMyProfile = async (req, res) => {
-  try {
-    const member = await Parish.findById(req.userId).select("-password");
-    if (!member) {
-      return res.status(404).json({ message: "Member not found" });
-    }
-
-    res.status(200).json({ member });
-  } catch (error) {
-    res.status(500).json({ message: "Server error", error: error.message });
-  }
-};
+import bcrypt from "bcrypt";
 
 // Update logged-in member's profile
 export const updateMyProfile = async (req, res) => {
@@ -81,36 +83,6 @@ export const changePassword = async (req, res) => {
     await member.save();
 
     res.status(200).json({ message: "Password changed successfully" });
-  } catch (error) {
-    res.status(500).json({ message: "Server error", error: error.message });
-  }
-};
-
-// Delete own account
-export const deleteMyAccount = async (req, res) => {
-  try {
-    const { password } = req.body;
-
-    if (!password) {
-      return res
-        .status(400)
-        .json({ message: "Please provide password to confirm deletion" });
-    }
-
-    const member = await Parish.findById(req.userId);
-    if (!member) {
-      return res.status(404).json({ message: "Member not found" });
-    }
-
-    // Verify password
-    const isPasswordValid = await bcrypt.compare(password, member.password);
-    if (!isPasswordValid) {
-      return res.status(401).json({ message: "Incorrect password" });
-    }
-
-    await Parish.findByIdAndDelete(req.userId);
-
-    res.status(200).json({ message: "Account deleted successfully" });
   } catch (error) {
     res.status(500).json({ message: "Server error", error: error.message });
   }

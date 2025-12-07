@@ -7,6 +7,7 @@ import cookieParser from "cookie-parser";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import authRoutes from "./Routes/auth.route.js";
+import adminRoutes from "./Routes/adminRoutes.js";
 
 // Load environment variables
 dotenv.config();
@@ -61,7 +62,9 @@ app.use(cookieParser());
 // });
 
 // API Routes
-app.use("/api", authRoutes);
+app.use("/api/auth", authRoutes);
+// API ROUTES ADMIN CONTROLLER
+app.use("/api/admin", adminRoutes);
 
 // 404 Handler
 app.all("*", (req, res) => {
