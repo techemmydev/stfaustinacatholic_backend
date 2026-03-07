@@ -65,13 +65,26 @@ import {
 } from "../controllers/timeSlotController.js";
 
 import {
-  getAllMassesAdmin,
   createMass,
   createBulkMasses,
   updateMass,
   toggleMassStatus,
   deleteMass,
 } from "../controllers/Masscontroller.js";
+
+import {
+  getAllContacts,
+  markAsRead,
+  markAsResponded,
+  deleteContactById,
+} from "../controllers/contactController.js";
+
+import {
+  getAllThanksgivingsAdmin,
+  approveThanksgiving,
+  rejectThanksgiving,
+  deleteThanksgiving,
+} from "../controllers/thanksgivingController.js";
 
 const router = express.Router();
 
@@ -101,20 +114,6 @@ router.patch(
 );
 router.delete("/users/:id", authenticateAdmin, requireSuperAdmin, deleteAdmin);
 
-import {
-  getAllThanksgivingsAdmin,
-  approveThanksgiving,
-  rejectThanksgiving,
-  deleteThanksgiving,
-} from "../controllers/thanksgivingController.js";
-
-import {
-  submitContact,
-  getAllContacts,
-  markAsRead,
-  markAsResponded,
-  deleteContactById,
-} from "../controllers/contactController.js";
 // ============ PUBLIC ROUTES ============
 // These routes are accessible to everyone
 
@@ -240,10 +239,10 @@ router.patch("/thanksgivings/:id/reject", rejectThanksgiving);
 router.delete("/thanksgivings/:id", deleteThanksgiving);
 
 // Admin-protected
-router.get("/", authenticateAdmin, getAllContacts);
-router.patch("/:id/read", authenticateAdmin, markAsRead);
-router.patch("/:id/responded", authenticateAdmin, markAsResponded);
-router.delete("/:id", authenticateAdmin, deleteContactById);
+router.get("/contact", authenticateAdmin, getAllContacts);
+router.patch("/contact/:id/read", authenticateAdmin, markAsRead);
+router.patch("/contact/:id/responded", authenticateAdmin, markAsResponded);
+router.delete("/contact/:id", authenticateAdmin, deleteContactById);
 
 // GET /api/admin/masses
 // router.get("/masses", getAllMassesAdmin);

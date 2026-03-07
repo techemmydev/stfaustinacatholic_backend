@@ -37,6 +37,7 @@ router.post("/invitations", submitInvitation);
 router.get("/testimonials", getTestimonials);
 router.get("/appointments/:date", getAvailableSlots);
 router.post("/contact", submitContact);
+
 // router.get("/masses", getAllMassesAdmin);
 router.get("/masses", getMasses);
 router.post("/thanksgiving", createThanksgiving);
