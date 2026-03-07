@@ -86,6 +86,26 @@ import {
   deleteThanksgiving,
 } from "../controllers/thanksgivingController.js";
 
+import {
+  getAllSermonsAdmin,
+  createSermon,
+  updateSermon,
+  toggleSermonPublished,
+  deleteSermon,
+  getAllPhotosAdmin,
+  createPhoto,
+  updatePhoto,
+  togglePhotoPublished,
+  deletePhoto,
+} from "../controllers/Sermoncontroller.js";
+
+import {
+  getAllPriestsAdmin,
+  createPriest,
+  updatePriest,
+  togglePriestActive,
+  deletePriest,
+} from "../controllers/Priestcontroller.js";
 const router = express.Router();
 
 router.get("/getParishioners", getParishioners);
@@ -262,4 +282,24 @@ router.patch("/masses/:id/toggle-status", toggleMassStatus);
 // DELETE /api/admin/masses/:id
 router.delete("/masses/:id", deleteMass);
 
+// ── Admin: Sermons ───────────────────────────────────────
+router.get("/sermons", authenticateAdmin, getAllSermonsAdmin);
+router.post("/sermons", authenticateAdmin, createSermon);
+router.put("/sermons/:id", authenticateAdmin, updateSermon);
+router.patch("/sermons/:id/toggle", authenticateAdmin, toggleSermonPublished);
+router.delete("/sermons/:id", authenticateAdmin, deleteSermon);
+
+// ── Admin: Gallery ───────────────────────────────────────
+router.get("/gallery", authenticateAdmin, getAllPhotosAdmin);
+router.post("/gallery", authenticateAdmin, createPhoto);
+router.put("/gallery/:id", authenticateAdmin, updatePhoto);
+router.patch("/gallery/:id/toggle", authenticateAdmin, togglePhotoPublished);
+router.delete("/gallery/:id", authenticateAdmin, deletePhoto);
+// ── Admin (protected) ────────────────────────────────────
+
+router.post("/createpriest", authenticateAdmin, createPriest);
+router.get("/fetchpriests", authenticateAdmin, getAllPriestsAdmin);
+router.put("/updatepriest/:id", authenticateAdmin, updatePriest);
+router.patch("/togglepriest/:id", authenticateAdmin, togglePriestActive);
+router.delete("/deletepriest/:id", authenticateAdmin, deletePriest);
 export default router;

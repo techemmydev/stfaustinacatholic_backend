@@ -25,8 +25,13 @@ import {
   createThanksgiving,
 } from "../controllers/thanksgivingController.js";
 import { getAvailableSlots } from "../controllers/timeSlotController.js";
-import { getAllMassesAdmin } from "../controllers/Masscontroller.js";
 
+import {
+  getAllSermons,
+  getAllPhotos,
+} from "../controllers/Sermoncontroller.js";
+
+import { getAllPriests } from "../controllers/Priestcontroller.js";
 const router = express.Router();
 
 // Auth Routes
@@ -37,10 +42,12 @@ router.post("/invitations", submitInvitation);
 router.get("/testimonials", getTestimonials);
 router.get("/appointments/:date", getAvailableSlots);
 router.post("/contact", submitContact);
-
+router.get("/sermons", getAllSermons);
+router.get("/gallery", getAllPhotos);
 // router.get("/masses", getAllMassesAdmin);
 router.get("/masses", getMasses);
 router.post("/thanksgiving", createThanksgiving);
+router.get("/priests", getAllPriests);
 // // Time Slot Routes
 // router.get("/appointments/:date", getAvailableSlots);
 // router.post("/seed/:date", seedSlots);
