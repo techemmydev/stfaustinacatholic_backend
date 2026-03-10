@@ -32,6 +32,20 @@ const adminSchema = new mongoose.Schema(
     lastLogin: {
       type: Date,
     },
+
+    // ── Notification preferences ─────────────────────────────
+    notifications: {
+      emailNotifications: { type: Boolean, default: true },
+      appointmentReminders: { type: Boolean, default: true },
+      weeklyReports: { type: Boolean, default: false },
+    },
+
+    // ── System configuration ─────────────────────────────────
+    systemConfig: {
+      autoApproveConfessions: { type: Boolean, default: false },
+      requireEmailVerification: { type: Boolean, default: true },
+      maxDailyAppointments: { type: Number, default: 20 },
+    },
   },
   { timestamps: true },
 );

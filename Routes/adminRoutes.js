@@ -106,6 +106,13 @@ import {
   togglePriestActive,
   deletePriest,
 } from "../controllers/Priestcontroller.js";
+
+import {
+  getAdminProfile,
+  updateAdminProfile,
+  updateAdminPassword,
+} from "../controllers/Adminsettingscontroller.js";
+import { verifyAdmin } from "../middleware/Verifyadmin.js";
 const router = express.Router();
 
 router.get("/getParishioners", getParishioners);
@@ -302,4 +309,8 @@ router.get("/fetchpriests", authenticateAdmin, getAllPriestsAdmin);
 router.put("/updatepriest/:id", authenticateAdmin, updatePriest);
 router.patch("/togglepriest/:id", authenticateAdmin, togglePriestActive);
 router.delete("/deletepriest/:id", authenticateAdmin, deletePriest);
+
+router.get("/profile", authenticateAdmin, verifyAdmin, getAdminProfile);
+router.put("/profile", authenticateAdmin, updateAdminProfile);
+router.put("/password", authenticateAdmin, updateAdminPassword);
 export default router;

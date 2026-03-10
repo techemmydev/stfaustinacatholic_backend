@@ -9,65 +9,84 @@ import rateLimit from "express-rate-limit";
 import authRoutes from "./Routes/auth.route.js";
 import adminRoutes from "./Routes/adminRoutes.js";
 
-// Load environment variables
+// ── Load environment variables ────────────────────────────────
 dotenv.config();
 
-// server setup
+// ── Server setup ──────────────────────────────────────────────
 const app = express();
 const PORT = process.env.PORT || 5000;
 const isProduction = process.env.NODE_ENV === "production";
 
-// Security Middleware
-app.use(helmet()); // Adds security headers
-
-// Rate Limiting (prevents abuse)
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
-  message: "Too many requests from this IP, please try again later.",
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-app.use(limiter);
-
-// Body Parser & Logging
-app.use(express.json());
-app.use(morgan(isProduction ? "combined" : "dev"));
-
-// CORS Configuration
+// ── 1. CORS — must come FIRST before every other middleware ───
+// If CORS runs after helmet or body-parser, preflight OPTIONS
+// requests get rejected before the CORS headers are ever added.
 const allowedOrigins = [
-  "http://localhost:5173", // local dev frontend
-  // "https://eventurehall.com", // live frontend
+  "http://localhost:5173", // Vite dev frontend
+  // "https://yourdomain.com", // add your live frontend URL here when deploying
 ];
 
 app.use(
   cors({
     origin: function (origin, callback) {
-      // Allow requests with no origin (mobile apps, Postman, etc.)
+      // Allow requests with no origin (Postman, mobile apps, server-to-server)
       if (!origin || allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
         callback(new Error("Not allowed by CORS"));
       }
     },
-    credentials: true,
+    credentials: true, // REQUIRED: allows cookies (adminToken) to be sent cross-origin
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   }),
 );
 
+// ── 2. Security headers (helmet) ──────────────────────────────
+// Adds various HTTP headers to protect against common attacks.
+// Comes after CORS so it doesn't interfere with preflight responses.
+app.use(helmet());
+
+// ── 3. Body parser ────────────────────────────────────────────
+// Parses incoming JSON request bodies (req.body)
+app.use(express.json());
+
+// ── 4. Cookie parser ──────────────────────────────────────────
+// Parses cookies from incoming requests (needed for adminToken cookie auth)
 app.use(cookieParser());
 
-// Health Check Route (useful for monitoring)
-// app.get("/health", (req, res) => {
-//   res.status(200).json({ status: "ok", timestamp: new Date().toISOString() });
-// });
+// ── 5. Request logging ────────────────────────────────────────
+// "combined" gives full Apache-style logs in production,
+// "dev" gives concise colorized output in development
+app.use(morgan(isProduction ? "combined" : "dev"));
 
-// API Routes
+// ── 6. Rate limiting ──────────────────────────────────────────
+// Prevents brute-force and abuse by limiting requests per IP.
+// In development we skip it entirely so rapid dashboard fetches
+// (8+ slices firing at once) don't trigger 429 Too Many Requests.
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15-minute window
+  max: 100, // max 100 requests per window in production
+  message: {
+    success: false,
+    message: "Too many requests from this IP, please try again later.",
+  },
+  standardHeaders: true, // sends RateLimit-* headers (RFC standard)
+  legacyHeaders: false, // disables X-RateLimit-* headers (old style)
+  skip: () => !isProduction, // ← skip rate limiting completely in development
+});
+
+app.use(limiter);
+
+// ── 7. API Routes ─────────────────────────────────────────────
+
+// Public auth routes (login, register, etc.)
 app.use("/api/auth", authRoutes);
 
-// API ROUTES ADMIN CONTROLLER
+// Admin routes (protected by verifyAdmin middleware inside each route file)
 app.use("/api/admin", adminRoutes);
 
-// 404 Handler
+// ── 8. 404 Handler ────────────────────────────────────────────
+// Catches any request that doesn't match a registered route
 app.all("*", (req, res) => {
   res.status(404).json({
     success: false,
@@ -76,19 +95,21 @@ app.all("*", (req, res) => {
   });
 });
 
-// Error Handling Middleware
+// ── 9. Global error handler ───────────────────────────────────
+// Catches errors thrown by routes and middleware via next(err)
 app.use((err, req, res, next) => {
   console.error(err.stack);
 
-  // CORS errors
+  // Handle CORS violations specifically
   if (err.message === "Not allowed by CORS") {
     return res.status(403).json({
       success: false,
-      message: "CORS policy violation",
+      message: "CORS policy violation — origin not allowed",
     });
   }
 
-  // Default error response
+  // Generic error response
+  // In production we hide the raw error message for security
   const statusCode = err.statusCode || 500;
   const message = isProduction
     ? "Something went wrong!"
@@ -97,13 +118,13 @@ app.use((err, req, res, next) => {
   res.status(statusCode).json({
     success: false,
     message,
-    ...(!isProduction && { stack: err.stack }), // Only show stack in development
+    ...(!isProduction && { stack: err.stack }), // only expose stack trace in dev
   });
 });
 
-// Start Server
+// ── 10. Start server ──────────────────────────────────────────
 app.listen(PORT, () => {
-  console.log(`Server is running on port: ${PORT}`);
-  console.log(`Environment: ${process.env.NODE_ENV || "development"}`);
+  console.log(`✅ Server is running on port: ${PORT}`);
+  console.log(`🌍 Environment: ${process.env.NODE_ENV || "development"}`);
   dbConnect();
 });
