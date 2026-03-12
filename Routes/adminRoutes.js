@@ -313,4 +313,5 @@ router.delete("/deletepriest/:id", authenticateAdmin, deletePriest);
 router.get("/profile", authenticateAdmin, verifyAdmin, getAdminProfile);
 router.put("/profile", authenticateAdmin, updateAdminProfile);
 router.put("/password", authenticateAdmin, updateAdminPassword);
+
 export default router;
