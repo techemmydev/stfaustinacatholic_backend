@@ -32,6 +32,12 @@ import {
 } from "../controllers/Sermoncontroller.js";
 
 import { getAllPriests } from "../controllers/Priestcontroller.js";
+
+import {
+  initializeDonation,
+  verifyDonation,
+  paystackWebhook,
+} from "../controllers/Donationcontroller.js";
 const router = express.Router();
 
 // Auth Routes
@@ -63,5 +69,16 @@ router.post("/cookies", postcookies);
 //Event and mass schedule routes are in admin routes since they are only for admin to manage, not for public to access.
 router.get("/events", getPublishedEvents);
 router.get("/mass-schedules", getAllMassSchedulesAdmin);
+
+// ── Public ───────────────────────────────────────────────────────
+// POST /api/donations/initialize
+router.post("/donations/initialize", initializeDonation);
+
+// GET  /api/donations/verify/:reference
+router.get("/verify/:reference", verifyDonation);
+
+// POST /api/donations/webhook   ← register this URL in Paystack dashboard
+// NOTE: raw body needed for signature check — see server.js note below
+router.post("/webhook", paystackWebhook);
 
 export default router;

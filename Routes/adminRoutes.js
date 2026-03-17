@@ -113,6 +113,13 @@ import {
   updateAdminPassword,
 } from "../controllers/Adminsettingscontroller.js";
 import { verifyAdmin } from "../middleware/Verifyadmin.js";
+
+import {
+  getAllDonationsAdmin,
+  getDonationStats,
+  deleteDonation,
+} from "../controllers/Donationcontroller.js";
+
 const router = express.Router();
 
 router.get("/getParishioners", getParishioners);
@@ -313,5 +320,15 @@ router.delete("/deletepriest/:id", authenticateAdmin, deletePriest);
 router.get("/profile", authenticateAdmin, verifyAdmin, getAdminProfile);
 router.put("/profile", authenticateAdmin, updateAdminProfile);
 router.put("/password", authenticateAdmin, updateAdminPassword);
+
+// ── Admin (protected) ────────────────────────────────────────────
+// GET  /api/admin/donations
+router.get("/donations/initialize", authenticateAdmin, getAllDonationsAdmin);
+
+// GET  /api/admin/donations/stats
+router.get("/donations/stats", authenticateAdmin, getDonationStats);
+
+// DELETE /api/admin/donations/:id
+router.delete("/donations/:id", authenticateAdmin, deleteDonation);
 
 export default router;

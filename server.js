@@ -47,6 +47,8 @@ app.use(
 app.use(helmet());
 
 // ── 3. Body parser ────────────────────────────────────────────
+
+app.use("/api/donations/webhook", express.raw({ type: "application/json" }));
 // Parses incoming JSON request bodies (req.body)
 app.use(express.json());
 
