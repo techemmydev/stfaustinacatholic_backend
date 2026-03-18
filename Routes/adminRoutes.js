@@ -1,4 +1,14 @@
 import express from "express";
+
+// ── Middleware ────────────────────────────────────────────────────────────────
+import {
+  authenticateAdmin,
+  requireAdminOrAbove,
+  requireSuperAdmin,
+} from "../middleware/adminAuth.js";
+import { verifyAdmin } from "../middleware/Verifyadmin.js";
+
+// ── Controllers ───────────────────────────────────────────────────────────────
 import {
   loginAdmin,
   logoutAdmin,
@@ -10,18 +20,20 @@ import {
   getCurrentAdmin,
   changePassword,
 } from "../controllers/adminController.js";
+
 import {
-  authenticateAdmin,
-  requireAdminOrAbove,
-  requireSuperAdmin,
-} from "../middleware/adminAuth.js";
+  getAdminProfile,
+  updateAdminProfile,
+  updateAdminPassword,
+} from "../controllers/Adminsettingscontroller.js";
+
 import {
   getParishioners,
-  // registerParishioner,
   updateParishioner,
   deleteParishioner,
   deleteAllParishioners,
 } from "../controllers/parishController.js";
+
 import {
   getAllTestimonialsAdmin,
   approveTestimonial,
@@ -29,12 +41,14 @@ import {
   toggleTestimonialVisibility,
   deleteTestimonial,
 } from "../controllers/testimonialController.js";
+
 import {
   getAllInvitationsAdmin,
   acceptInvitation,
   rejectInvitation,
   deleteInvitation,
 } from "../controllers/invitationController.js";
+
 import {
   getAllEventsAdmin,
   createEvent,
@@ -42,6 +56,7 @@ import {
   toggleEventPublish,
   deleteEvent,
 } from "../controllers/Eventcontroller.js";
+
 import {
   getAllMassSchedulesAdmin,
   createMassSchedule,
@@ -49,6 +64,7 @@ import {
   toggleMassSchedulePublish,
   deleteMassSchedule,
 } from "../controllers/Massschedulecontroller .js";
+
 import {
   getAllAppointmentsAdmin,
   approveAppointment,
@@ -108,35 +124,46 @@ import {
 } from "../controllers/Priestcontroller.js";
 
 import {
-  getAdminProfile,
-  updateAdminProfile,
-  updateAdminPassword,
-} from "../controllers/Adminsettingscontroller.js";
-import { verifyAdmin } from "../middleware/Verifyadmin.js";
-
-import {
   getAllDonationsAdmin,
   getDonationStats,
   deleteDonation,
 } from "../controllers/Donationcontroller.js";
 
+// ─────────────────────────────────────────────────────────────────────────────
 const router = express.Router();
+// All routes here are prefixed with /api/admin (see server.js)
+// ─────────────────────────────────────────────────────────────────────────────
 
-router.get("/getParishioners", getParishioners);
-// router.post("/", registerParishioner); //
-router.patch("/parishioners/:id", updateParishioner);
-router.delete("/parishioners/:id", deleteParishioner);
-router.delete("/parishioners", deleteAllParishioners);
-
-// Public routes
+// ══════════════════════════════════════════════════════════════════════════════
+// AUTH
+// POST   /api/admin/login
+// POST   /api/admin/logout
+// GET    /api/admin/me
+// PUT    /api/admin/change-password
+// ══════════════════════════════════════════════════════════════════════════════
 router.post("/login", loginAdmin);
-
-// Protected routes (require authentication)
 router.post("/logout", authenticateAdmin, logoutAdmin);
 router.get("/me", authenticateAdmin, getCurrentAdmin);
-
-// Admin management (require Admin or Super Admin)
 router.put("/change-password", authenticateAdmin, changePassword);
+
+// ══════════════════════════════════════════════════════════════════════════════
+// ADMIN PROFILE & SETTINGS
+// GET    /api/admin/profile
+// PUT    /api/admin/profile
+// PUT    /api/admin/password
+// ══════════════════════════════════════════════════════════════════════════════
+router.get("/profile", authenticateAdmin, verifyAdmin, getAdminProfile);
+router.put("/profile", authenticateAdmin, updateAdminProfile);
+router.put("/password", authenticateAdmin, updateAdminPassword);
+
+// ══════════════════════════════════════════════════════════════════════════════
+// ADMIN USER MANAGEMENT  (Super Admin only for create/delete/toggle)
+// GET    /api/admin/users
+// POST   /api/admin/users
+// PUT    /api/admin/users/:id
+// PATCH  /api/admin/users/:id/toggle-status
+// DELETE /api/admin/users/:id
+// ══════════════════════════════════════════════════════════════════════════════
 router.get("/users", authenticateAdmin, requireAdminOrAbove, getAllAdmins);
 router.post("/users", authenticateAdmin, requireSuperAdmin, createAdmin);
 router.put("/users/:id", authenticateAdmin, requireAdminOrAbove, updateAdmin);
@@ -148,187 +175,200 @@ router.patch(
 );
 router.delete("/users/:id", authenticateAdmin, requireSuperAdmin, deleteAdmin);
 
-// ============ PUBLIC ROUTES ============
-// These routes are accessible to everyone
+// ══════════════════════════════════════════════════════════════════════════════
+// PARISHIONERS
+// GET    /api/admin/getParishioners
+// PATCH  /api/admin/parishioners/:id
+// DELETE /api/admin/parishioners/:id
+// DELETE /api/admin/parishioners
+// ══════════════════════════════════════════════════════════════════════════════
+router.get("/getParishioners", getParishioners);
+router.patch("/parishioners/:id", updateParishioner);
+router.delete("/parishioners/:id", deleteParishioner);
+router.delete("/parishioners", deleteAllParishioners);
 
-// Submit a new testimonial (from public form)
-
-// ============ ADMIN ROUTES ============
-// These routes require admin authentication
-
-// Get all testimonials (all statuses)
-router.get("/testimonials", getAllTestimonialsAdmin);
-
-// Approve a testimonial
-router.patch(
-  "/testimonials/:id/approve",
-  authenticateAdmin,
-  approveTestimonial,
-);
-
-// Reject a testimonial
-router.patch("/testimonials/:id/reject", authenticateAdmin, rejectTestimonial);
-
-// Toggle testimonial visibility
-router.patch(
-  "/testimonials/:id/toggle-visibility",
-  authenticateAdmin,
-  toggleTestimonialVisibility,
-);
-
-// Delete a testimonial
-router.delete("/testimonials/:id", authenticateAdmin, deleteTestimonial);
-
-// Get all invitations (admin - includes all statuses)
-// POST /api/invitations
-
-// Admin routes (add to your adminRoutes.js)
-// GET /api/admin/invitations
-router.get("/invitations", getAllInvitationsAdmin);
-
-// PATCH /api/admin/invitations/:id/accept
-router.patch("/invitations/:id/accept", acceptInvitation);
-
-// PATCH /api/admin/invitations/:id/reject
-router.patch("/invitations/:id/reject", rejectInvitation);
-
-// DELETE /api/admin/invitations/:id
-router.delete("/invitations/:id", deleteInvitation);
-
-// ============ EVENT ADMIN ROUTES ============
-// GET /api/admin/events
-router.get("/events", getAllEventsAdmin);
-
-// POST /api/admin/events
-router.post("/events", createEvent);
-
-// PUT /api/admin/events/:id
-router.put("/events/:id", updateEvent);
-
-// PATCH /api/admin/events/:id/toggle-publish
-router.patch("/events/:id/toggle-publish", toggleEventPublish);
-
-// DELETE /api/admin/events/:id
-router.delete("/events/:id", deleteEvent);
-
-// ============ MASS SCHEDULE ADMIN ROUTES ============
-// GET /api/admin/mass-schedules
-router.get("/mass-schedules", getAllMassSchedulesAdmin);
-
-// POST /api/admin/mass-schedules
-router.post("/mass-schedules", createMassSchedule);
-
-// PUT /api/admin/mass-schedules/:id
-router.put("/mass-schedules/:id", updateMassSchedule);
-
-// PATCH /api/admin/mass-schedules/:id/toggle-publish
-router.patch("/mass-schedules/:id/toggle-publish", toggleMassSchedulePublish);
-
-// DELETE /api/admin/mass-schedules/:id
-router.delete("/mass-schedules/:id", deleteMassSchedule);
-
-// apoingtment booking
-// GET  /api/admin/appointments         → all appointments
+// ══════════════════════════════════════════════════════════════════════════════
+// APPOINTMENTS
+// GET    /api/admin/appointments
+// PATCH  /api/admin/appointments/:id/approve
+// PATCH  /api/admin/appointments/:id/reject
+// DELETE /api/admin/appointments/:id
+// ══════════════════════════════════════════════════════════════════════════════
 router.get("/appointments", authenticateAdmin, getAllAppointmentsAdmin);
-
-// PATCH /api/admin/appointments/:id/approve
 router.patch(
   "/appointments/:id/approve",
   authenticateAdmin,
   approveAppointment,
 );
-
-// PATCH /api/admin/appointments/:id/reject
 router.patch("/appointments/:id/reject", authenticateAdmin, rejectAppointment);
-
-// DELETE /api/admin/appointments/:id
 router.delete("/appointments/:id", authenticateAdmin, deleteAppointment);
 
-// GET  /api/admin/time-slots?date=YYYY-MM-DD  → get all slots for a date
+// ══════════════════════════════════════════════════════════════════════════════
+// TIME SLOTS
+// GET    /api/admin/time-slots?date=YYYY-MM-DD
+// POST   /api/admin/time-slots
+// POST   /api/admin/time-slots/bulk
+// PATCH  /api/admin/time-slots/:id
+// DELETE /api/admin/time-slots/:id
+// ══════════════════════════════════════════════════════════════════════════════
 router.get("/time-slots", authenticateAdmin, getAllSlotsForDate);
-
-// POST /api/admin/time-slots                  → create a single slot
 router.post("/time-slots", authenticateAdmin, createSlot);
-
-// POST /api/admin/time-slots/bulk             → create many slots at once
-router.post("/time-slots/bulk", authenticateAdmin, createBulkSlots);
-
-// PATCH /api/admin/time-slots/:id             → update capacity or availability
+router.post("/time-slots/bulk", authenticateAdmin, createBulkSlots); // must be before /:id
 router.patch("/time-slots/:id", authenticateAdmin, updateSlot);
-
-// DELETE /api/admin/time-slots/:id            → delete a slot (if no bookings)
 router.delete("/time-slots/:id", authenticateAdmin, deleteSlot);
 
-// GET /api/admin/thanksgivings
-router.get("/thanksgivings", getAllThanksgivingsAdmin);
-// router.post("/thanksgivings", submitThanksgiving);
-
-// PATCH /api/admin/thanksgivings/:id/approve
-router.patch("/thanksgivings/:id/approve", approveThanksgiving);
-
-// PATCH /api/admin/thanksgivings/:id/reject
-router.patch("/thanksgivings/:id/reject", rejectThanksgiving);
-
+// ══════════════════════════════════════════════════════════════════════════════
+// MASS THANKSGIVING (BOOKINGS)
+// GET    /api/admin/thanksgivings
+// PATCH  /api/admin/thanksgivings/:id/approve
+// PATCH  /api/admin/thanksgivings/:id/reject
 // DELETE /api/admin/thanksgivings/:id
+// ══════════════════════════════════════════════════════════════════════════════
+router.get("/thanksgivings", getAllThanksgivingsAdmin);
+router.patch("/thanksgivings/:id/approve", approveThanksgiving);
+router.patch("/thanksgivings/:id/reject", rejectThanksgiving);
 router.delete("/thanksgivings/:id", deleteThanksgiving);
 
-// Admin-protected
-router.get("/contact", authenticateAdmin, getAllContacts);
-router.patch("/contact/:id/read", authenticateAdmin, markAsRead);
-router.patch("/contact/:id/responded", authenticateAdmin, markAsResponded);
-router.delete("/contact/:id", authenticateAdmin, deleteContactById);
+// ══════════════════════════════════════════════════════════════════════════════
+// MASS SCHEDULE
+// GET    /api/admin/mass-schedules
+// POST   /api/admin/mass-schedules
+// PUT    /api/admin/mass-schedules/:id
+// PATCH  /api/admin/mass-schedules/:id/toggle-publish
+// DELETE /api/admin/mass-schedules/:id
+// ══════════════════════════════════════════════════════════════════════════════
+router.get("/mass-schedules", getAllMassSchedulesAdmin);
+router.post("/mass-schedules", createMassSchedule);
+router.put("/mass-schedules/:id", updateMassSchedule);
+router.patch("/mass-schedules/:id/toggle-publish", toggleMassSchedulePublish);
+router.delete("/mass-schedules/:id", deleteMassSchedule);
 
-// GET /api/admin/masses
-// router.get("/masses", getAllMassesAdmin);
-
-// POST /api/admin/masses
-router.post("/masses", createMass);
-
-// POST /api/admin/masses/bulk
-router.post("/masses/bulk", createBulkMasses);
-
-// PATCH /api/admin/masses/:id
-router.patch("/masses/:id", updateMass);
-
-// PATCH /api/admin/masses/:id/toggle-status
-router.patch("/masses/:id/toggle-status", toggleMassStatus);
-
+// ══════════════════════════════════════════════════════════════════════════════
+// MASSES (individual mass instances / thanksgiving mass management)
+// POST   /api/admin/masses
+// POST   /api/admin/masses/bulk
+// PATCH  /api/admin/masses/:id
+// PATCH  /api/admin/masses/:id/toggle-status
 // DELETE /api/admin/masses/:id
+// ══════════════════════════════════════════════════════════════════════════════
+router.post("/masses", createMass);
+router.post("/masses/bulk", createBulkMasses); // must be before /:id
+router.patch("/masses/:id", updateMass);
+router.patch("/masses/:id/toggle-status", toggleMassStatus);
 router.delete("/masses/:id", deleteMass);
 
-// ── Admin: Sermons ───────────────────────────────────────
+// ══════════════════════════════════════════════════════════════════════════════
+// EVENTS
+// GET    /api/admin/events
+// POST   /api/admin/events
+// PUT    /api/admin/events/:id
+// PATCH  /api/admin/events/:id/toggle-publish
+// DELETE /api/admin/events/:id
+// ══════════════════════════════════════════════════════════════════════════════
+router.get("/events", getAllEventsAdmin);
+router.post("/events", createEvent);
+router.put("/events/:id", updateEvent);
+router.patch("/events/:id/toggle-publish", toggleEventPublish);
+router.delete("/events/:id", deleteEvent);
+
+// ══════════════════════════════════════════════════════════════════════════════
+// SERMONS
+// GET    /api/admin/sermons
+// POST   /api/admin/sermons
+// PUT    /api/admin/sermons/:id
+// PATCH  /api/admin/sermons/:id/toggle
+// DELETE /api/admin/sermons/:id
+// ══════════════════════════════════════════════════════════════════════════════
 router.get("/sermons", authenticateAdmin, getAllSermonsAdmin);
 router.post("/sermons", authenticateAdmin, createSermon);
 router.put("/sermons/:id", authenticateAdmin, updateSermon);
 router.patch("/sermons/:id/toggle", authenticateAdmin, toggleSermonPublished);
 router.delete("/sermons/:id", authenticateAdmin, deleteSermon);
 
-// ── Admin: Gallery ───────────────────────────────────────
+// ══════════════════════════════════════════════════════════════════════════════
+// GALLERY
+// GET    /api/admin/gallery
+// POST   /api/admin/gallery
+// PUT    /api/admin/gallery/:id
+// PATCH  /api/admin/gallery/:id/toggle
+// DELETE /api/admin/gallery/:id
+// ══════════════════════════════════════════════════════════════════════════════
 router.get("/gallery", authenticateAdmin, getAllPhotosAdmin);
 router.post("/gallery", authenticateAdmin, createPhoto);
 router.put("/gallery/:id", authenticateAdmin, updatePhoto);
 router.patch("/gallery/:id/toggle", authenticateAdmin, togglePhotoPublished);
 router.delete("/gallery/:id", authenticateAdmin, deletePhoto);
-// ── Admin (protected) ────────────────────────────────────
 
-router.post("/createpriest", authenticateAdmin, createPriest);
+// ══════════════════════════════════════════════════════════════════════════════
+// PRIESTS
+// GET    /api/admin/fetchpriests
+// POST   /api/admin/createpriest
+// PUT    /api/admin/updatepriest/:id
+// PATCH  /api/admin/togglepriest/:id
+// DELETE /api/admin/deletepriest/:id
+// ══════════════════════════════════════════════════════════════════════════════
 router.get("/fetchpriests", authenticateAdmin, getAllPriestsAdmin);
+router.post("/createpriest", authenticateAdmin, createPriest);
 router.put("/updatepriest/:id", authenticateAdmin, updatePriest);
 router.patch("/togglepriest/:id", authenticateAdmin, togglePriestActive);
 router.delete("/deletepriest/:id", authenticateAdmin, deletePriest);
 
-router.get("/profile", authenticateAdmin, verifyAdmin, getAdminProfile);
-router.put("/profile", authenticateAdmin, updateAdminProfile);
-router.put("/password", authenticateAdmin, updateAdminPassword);
+// ══════════════════════════════════════════════════════════════════════════════
+// TESTIMONIALS
+// GET    /api/admin/testimonials
+// PATCH  /api/admin/testimonials/:id/approve
+// PATCH  /api/admin/testimonials/:id/reject
+// PATCH  /api/admin/testimonials/:id/toggle-visibility
+// DELETE /api/admin/testimonials/:id
+// ══════════════════════════════════════════════════════════════════════════════
+router.get("/testimonials", getAllTestimonialsAdmin);
+router.patch(
+  "/testimonials/:id/approve",
+  authenticateAdmin,
+  approveTestimonial,
+);
+router.patch("/testimonials/:id/reject", authenticateAdmin, rejectTestimonial);
+router.patch(
+  "/testimonials/:id/toggle-visibility",
+  authenticateAdmin,
+  toggleTestimonialVisibility,
+);
+router.delete("/testimonials/:id", authenticateAdmin, deleteTestimonial);
 
-// ── Admin (protected) ────────────────────────────────────────────
-// GET  /api/admin/donations
-router.get("/donations/initialize", authenticateAdmin, getAllDonationsAdmin);
+// ══════════════════════════════════════════════════════════════════════════════
+// INVITATIONS
+// GET    /api/admin/invitations
+// PATCH  /api/admin/invitations/:id/accept
+// PATCH  /api/admin/invitations/:id/reject
+// DELETE /api/admin/invitations/:id
+// ══════════════════════════════════════════════════════════════════════════════
+router.get("/invitations", getAllInvitationsAdmin);
+router.patch("/invitations/:id/accept", acceptInvitation);
+router.patch("/invitations/:id/reject", rejectInvitation);
+router.delete("/invitations/:id", deleteInvitation);
 
-// GET  /api/admin/donations/stats
-router.get("/donations/stats", authenticateAdmin, getDonationStats);
+// ══════════════════════════════════════════════════════════════════════════════
+// CONTACTS
+// GET    /api/admin/contact
+// PATCH  /api/admin/contact/:id/read
+// PATCH  /api/admin/contact/:id/responded
+// DELETE /api/admin/contact/:id
+// ══════════════════════════════════════════════════════════════════════════════
+router.get("/contact", authenticateAdmin, getAllContacts);
+router.patch("/contact/:id/read", authenticateAdmin, markAsRead);
+router.patch("/contact/:id/responded", authenticateAdmin, markAsResponded);
+router.delete("/contact/:id", authenticateAdmin, deleteContactById);
 
+// ══════════════════════════════════════════════════════════════════════════════
+// DONATIONS
+// NOTE: /donations/initialize and /donations/stats must come before /donations/:id
+//       otherwise Express matches "initialize" and "stats" as :id params.
+// GET    /api/admin/donations/initialize  → fetch all donations
+// GET    /api/admin/donations/stats       → aggregated stats
 // DELETE /api/admin/donations/:id
+// ══════════════════════════════════════════════════════════════════════════════
+router.get("/donations/initialize", authenticateAdmin, getAllDonationsAdmin);
+router.get("/donations/stats", authenticateAdmin, getDonationStats);
 router.delete("/donations/:id", authenticateAdmin, deleteDonation);
 
 export default router;

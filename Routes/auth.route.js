@@ -1,36 +1,36 @@
 import express from "express";
-import { getPublishedEvents } from "../controllers/Eventcontroller.js";
-import { getAllMassSchedulesAdmin } from "../controllers/Massschedulecontroller .js";
-import { registerParishioner } from "../controllers/parishController.js";
-//adminroutes
 
-import { logoutforAdminandUser } from "../controllers/authController.js";
-import { getcookies, postcookies } from "../controllers/CookiesConsnt.js";
+// ── Middleware ────────────────────────────────────────────────────────────────
 import { authenticate } from "../middleware/auth.js";
 
-// import {
-//   getAvailableSlots,
-//   seedSlots,
-// } from "../controllers/timeSlotController.js";
-import { bookAppointment } from "../controllers/bookingAppointmentController.js";
-import { submitContact } from "../controllers/contactController.js";
-import { submitInvitation } from "../controllers/invitationController.js";
+// ── Controllers ───────────────────────────────────────────────────────────────
+import { logoutforAdminandUser } from "../controllers/authController.js";
+import { getcookies, postcookies } from "../controllers/CookiesConsnt.js";
+import { registerParishioner } from "../controllers/parishController.js";
+
 import {
   submitTestimonial,
   getTestimonials,
 } from "../controllers/testimonialController.js";
 
+import { submitInvitation } from "../controllers/invitationController.js";
+import { submitContact } from "../controllers/contactController.js";
+
+import { bookAppointment } from "../controllers/bookingAppointmentController.js";
+import { getAvailableSlots } from "../controllers/timeSlotController.js";
+
 import {
   getMasses,
   createThanksgiving,
 } from "../controllers/thanksgivingController.js";
-import { getAvailableSlots } from "../controllers/timeSlotController.js";
+
+import { getPublishedEvents } from "../controllers/Eventcontroller.js";
+import { getAllMassSchedulesAdmin } from "../controllers/Massschedulecontroller .js";
 
 import {
   getAllSermons,
   getAllPhotos,
 } from "../controllers/Sermoncontroller.js";
-
 import { getAllPriests } from "../controllers/Priestcontroller.js";
 
 import {
@@ -38,47 +38,104 @@ import {
   verifyDonation,
   paystackWebhook,
 } from "../controllers/Donationcontroller.js";
+
+// ─────────────────────────────────────────────────────────────────────────────
 const router = express.Router();
+// All routes here are prefixed with /api (see server.js)
+// ─────────────────────────────────────────────────────────────────────────────
 
-// Auth Routes
-router.post("/registerParishioner", registerParishioner);
-router.post("/testimonials", submitTestimonial);
-router.post("/invitations", submitInvitation);
-// Get all approved and visible testimonials (for public display)
-router.get("/testimonials", getTestimonials);
-router.get("/appointments/:date", getAvailableSlots);
-router.post("/contact", submitContact);
-router.get("/sermons", getAllSermons);
-router.get("/gallery", getAllPhotos);
-// router.get("/masses", getAllMassesAdmin);
-router.get("/masses", getMasses);
-router.post("/thanksgiving", createThanksgiving);
-router.get("/priests", getAllPriests);
-// // Time Slot Routes
-// router.get("/appointments/:date", getAvailableSlots);
-// router.post("/seed/:date", seedSlots);
-
-// Appointment Route
-router.post("/appointment", bookAppointment);
-
+// ══════════════════════════════════════════════════════════════════════════════
+// AUTH
+// POST  /api/logout
+// ══════════════════════════════════════════════════════════════════════════════
 router.post("/logout", authenticate, logoutforAdminandUser);
 
-// Cookie Consent Routes
+// ══════════════════════════════════════════════════════════════════════════════
+// COOKIE CONSENT
+// GET   /api/cookies
+// POST  /api/cookies
+// ══════════════════════════════════════════════════════════════════════════════
 router.get("/cookies", getcookies);
 router.post("/cookies", postcookies);
-//Event and mass schedule routes are in admin routes since they are only for admin to manage, not for public to access.
+
+// ══════════════════════════════════════════════════════════════════════════════
+// PARISHIONERS
+// POST  /api/registerParishioner
+// ══════════════════════════════════════════════════════════════════════════════
+router.post("/registerParishioner", registerParishioner);
+
+// ══════════════════════════════════════════════════════════════════════════════
+// TESTIMONIALS
+// POST  /api/testimonials  → submit a new testimonial (public form)
+// GET   /api/testimonials  → get all approved & visible testimonials
+// ══════════════════════════════════════════════════════════════════════════════
+router.post("/testimonials", submitTestimonial);
+router.get("/testimonials", getTestimonials);
+
+// ══════════════════════════════════════════════════════════════════════════════
+// INVITATIONS
+// POST  /api/invitations
+// ══════════════════════════════════════════════════════════════════════════════
+router.post("/invitations", submitInvitation);
+
+// ══════════════════════════════════════════════════════════════════════════════
+// CONTACT
+// POST  /api/contact
+// ══════════════════════════════════════════════════════════════════════════════
+router.post("/contact", submitContact);
+
+// ══════════════════════════════════════════════════════════════════════════════
+// APPOINTMENTS & TIME SLOTS
+// GET   /api/appointments/:date  → available slots for a given date
+// POST  /api/appointment         → book an appointment
+// ══════════════════════════════════════════════════════════════════════════════
+router.get("/appointments/:date", getAvailableSlots);
+router.post("/appointment", bookAppointment);
+
+// ══════════════════════════════════════════════════════════════════════════════
+// MASS THANKSGIVING
+// GET   /api/masses      → get all available masses
+// POST  /api/thanksgiving → submit a thanksgiving booking
+// ══════════════════════════════════════════════════════════════════════════════
+router.get("/masses", getMasses);
+router.post("/thanksgiving", createThanksgiving);
+
+// ══════════════════════════════════════════════════════════════════════════════
+// EVENTS & MASS SCHEDULES  (read-only, published only)
+// GET   /api/events
+// GET   /api/mass-schedules
+// ══════════════════════════════════════════════════════════════════════════════
 router.get("/events", getPublishedEvents);
 router.get("/mass-schedules", getAllMassSchedulesAdmin);
 
-// ── Public ───────────────────────────────────────────────────────
-// POST /api/donations/initialize
+// ══════════════════════════════════════════════════════════════════════════════
+// SERMONS & GALLERY  (read-only, published only)
+// GET   /api/sermons
+// GET   /api/gallery
+// ══════════════════════════════════════════════════════════════════════════════
+router.get("/sermons", getAllSermons);
+router.get("/gallery", getAllPhotos);
+
+// ══════════════════════════════════════════════════════════════════════════════
+// PRIESTS  (read-only)
+// GET   /api/priests
+// ══════════════════════════════════════════════════════════════════════════════
+router.get("/priests", getAllPriests);
+
+// ══════════════════════════════════════════════════════════════════════════════
+// DONATIONS (Paystack)
+// NOTE: /donations/initialize and /verify/:reference must come before /webhook
+// POST  /api/donations/initialize  → create Paystack payment session
+// GET   /api/verify/:reference     → verify payment after Paystack redirect
+// POST  /api/webhook               → Paystack webhook (register in dashboard)
+//
+// ⚠️  The webhook route requires the raw request body for HMAC signature
+//     verification. Make sure express.raw() is applied to this route in
+//     server.js BEFORE express.json() — e.g.:
+//     app.use("/api/webhook", express.raw({ type: "application/json" }))
+// ══════════════════════════════════════════════════════════════════════════════
 router.post("/donations/initialize", initializeDonation);
-
-// GET  /api/donations/verify/:reference
 router.get("/verify/:reference", verifyDonation);
-
-// POST /api/donations/webhook   ← register this URL in Paystack dashboard
-// NOTE: raw body needed for signature check — see server.js note below
 router.post("/webhook", paystackWebhook);
 
 export default router;
