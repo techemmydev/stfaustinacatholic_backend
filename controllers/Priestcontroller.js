@@ -1,4 +1,4 @@
-import Priest from "../models/PriestSchema.js";
+import Priest from "../models/Priestschema.js";
 
 // ── Public ───────────────────────────────────────────────────────────────────
 
