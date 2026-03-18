@@ -124,9 +124,9 @@ const router = express.Router();
 
 router.get("/getParishioners", getParishioners);
 // router.post("/", registerParishioner); //
-router.patch("/:id", updateParishioner);
-router.delete("/:id", deleteParishioner);
-router.delete("/", deleteAllParishioners);
+router.patch("/parishioners/:id", updateParishioner);
+router.delete("/parishioners/:id", deleteParishioner);
+router.delete("/parishioners", deleteAllParishioners);
 
 // Public routes
 router.post("/login", loginAdmin);
