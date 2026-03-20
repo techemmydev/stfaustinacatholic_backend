@@ -46,7 +46,35 @@ app.use(
 // ── 2. Security headers (helmet) ──────────────────────────────
 // Adds various HTTP headers to protect against common attacks.
 // Comes after CORS so it doesn't interfere with preflight responses.
-app.use(helmet());
+
+// ── 2. Security headers (helmet) ──────────────────────────────
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: [
+          "'self'",
+          "'unsafe-inline'",
+          "https://js.paystack.co",
+          "https://checkout.paystack.com",
+        ],
+        styleSrc: [
+          "'self'",
+          "'unsafe-inline'",
+          "https://paystack.com",
+          "https://checkout.paystack.com",
+        ],
+        frameSrc: ["'self'", "https://checkout.paystack.com"],
+        imgSrc: ["'self'", "data:", "https://paystack.com"],
+        connectSrc: ["'self'", "https://api.paystack.co"],
+        fontSrc: ["'self'", "https://fonts.gstatic.com"],
+      },
+    },
+    crossOriginEmbedderPolicy: false,
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+  }),
+);
 
 // ── 3. Body parser ────────────────────────────────────────────
 
