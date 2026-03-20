@@ -36,10 +36,10 @@ export const loginAdmin = async (req, res) => {
     );
 
     res.cookie("adminToken", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      httpOnly: true, // ✅ JS can't access the cookie
+      secure: process.env.NODE_ENV === "production", // ✅ HTTPS only in production
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "strict", // ✅ cross-site in prod, strict in dev
+      maxAge: 7 * 24 * 60 * 60 * 1000, // ✅ 7 days
     });
 
     res.json({

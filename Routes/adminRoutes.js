@@ -93,6 +93,7 @@ import {
   markAsRead,
   markAsResponded,
   deleteContactById,
+  submitContact,
 } from "../controllers/contactController.js";
 
 import {
@@ -354,6 +355,7 @@ router.delete("/invitations/:id", deleteInvitation);
 // PATCH  /api/admin/contact/:id/responded
 // DELETE /api/admin/contact/:id
 // ══════════════════════════════════════════════════════════════════════════════
+router.post("/contact", submitContact);
 router.get("/contact", authenticateAdmin, getAllContacts);
 router.patch("/contact/:id/read", authenticateAdmin, markAsRead);
 router.patch("/contact/:id/responded", authenticateAdmin, markAsResponded);
