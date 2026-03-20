@@ -2,7 +2,16 @@ import jwt from "jsonwebtoken";
 
 export const authenticateAdmin = (req, res, next) => {
   try {
-    const token = req.cookies.adminToken;
+    // ── 1. Try cookie first (desktop browsers) ─────────────────
+    let token = req.cookies.adminToken;
+
+    // ── 2. Fall back to Authorization header (mobile Safari) ───
+    if (!token) {
+      const authHeader = req.headers.authorization;
+      if (authHeader && authHeader.startsWith("Bearer ")) {
+        token = authHeader.split(" ")[1];
+      }
+    }
 
     if (!token) {
       return res.status(401).json({ message: "Authentication required" });
