@@ -21,10 +21,8 @@ const isProduction = process.env.NODE_ENV === "production";
 // If CORS runs after helmet or body-parser, preflight OPTIONS
 // requests get rejected before the CORS headers are ever added.
 const allowedOrigins = [
-  // "http://localhost:5173", //Vite dev frontend
-  // "https://yourdomain.com", // add your live frontend URL here when
-  // deploying
-  "https://stfaustina-parish.vercel.app",
+  // "http://localhost:5173",                // Vite dev — uncomment when developing locally
+  "https://stfaustina-parish.vercel.app", // Live frontend
 ];
 
 app.use(
@@ -44,10 +42,8 @@ app.use(
 );
 
 // ── 2. Security headers (helmet) ──────────────────────────────
-// Adds various HTTP headers to protect against common attacks.
-// Comes after CORS so it doesn't interfere with preflight responses.
-
-// ── 2. Security headers (helmet) ──────────────────────────────
+// Configured to allow Paystack inline popup resources.
+// crossOriginEmbedderPolicy disabled so Paystack iframe loads correctly.
 app.use(
   helmet({
     contentSecurityPolicy: {
@@ -71,15 +67,15 @@ app.use(
         fontSrc: ["'self'", "https://fonts.gstatic.com"],
       },
     },
-    crossOriginEmbedderPolicy: false,
-    crossOriginResourcePolicy: { policy: "cross-origin" },
+    crossOriginEmbedderPolicy: false, // required for Paystack iframe
+    crossOriginResourcePolicy: { policy: "cross-origin" }, // allows Paystack CSS/JS
   }),
 );
 
 // ── 3. Body parser ────────────────────────────────────────────
-
-app.use("/api/donations/webhook", express.raw({ type: "application/json" }));
-// Parses incoming JSON request bodies (req.body)
+// Webhook needs raw body for Paystack HMAC signature verification
+// Must be registered BEFORE express.json()
+app.use("/api/auth/webhook", express.raw({ type: "application/json" }));
 app.use(express.json());
 
 // ── 4. Cookie parser ──────────────────────────────────────────
@@ -91,31 +87,52 @@ app.use(cookieParser());
 // "dev" gives concise colorized output in development
 app.use(morgan(isProduction ? "combined" : "dev"));
 
-// ── 6. Rate limiting ──────────────────────────────────────────
-// Prevents brute-force and abuse by limiting requests per IP.
-// In development we skip it entirely so rapid dashboard fetches
-// (8+ slices firing at once) don't trigger 429 Too Many Requests.
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15-minute window
-  max: 100, // max 100 requests per window in production
+// ── 6. Rate limiting (tiered) ─────────────────────────────────
+//
+// Professional approach — two separate limiters:
+//
+//  authLimiter    → login endpoint only (strict: 20 req / 15 min)
+//                   prevents brute-force password attacks
+//
+//  generalLimiter → all other routes (generous: 500 req / 15 min)
+//                   supports admin dashboard firing 8+ Redux slices
+//                   simultaneously on every page load
+//
+// Both limiters are skipped entirely in development so local
+// testing never hits rate limit errors.
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 20, // 20 login attempts per window per IP
+  message: {
+    success: false,
+    message: "Too many login attempts, please try again in 15 minutes.",
+  },
+  standardHeaders: true, // RFC-standard RateLimit-* headers
+  legacyHeaders: false, // no X-RateLimit-* headers
+  skip: () => !isProduction,
+});
+
+const generalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 500, // 500 requests per window per IP
   message: {
     success: false,
     message: "Too many requests from this IP, please try again later.",
   },
-  standardHeaders: true, // sends RateLimit-* headers (RFC standard)
-  legacyHeaders: false, // disables X-RateLimit-* headers (old style)
-  skip: () => !isProduction, // ← skip rate limiting completely in development
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: () => !isProduction,
 });
-
-app.use(limiter);
 
 // ── 7. API Routes ─────────────────────────────────────────────
 
-// Public auth routes (login, register, etc.)
-app.use("/api/auth", authRoutes);
+// Strict limiter on login only — must be registered before the general route
+app.use("/api/admin/login", authLimiter);
 
-// Admin routes (protected by verifyAdmin middleware inside each route file)
-app.use("/api/admin", adminRoutes);
+// General limiter applied inline with route registration
+app.use("/api/auth", generalLimiter, authRoutes);
+app.use("/api/admin", generalLimiter, adminRoutes);
 
 // ── 8. 404 Handler ────────────────────────────────────────────
 // Catches any request that doesn't match a registered route
@@ -150,7 +167,7 @@ app.use((err, req, res, next) => {
   res.status(statusCode).json({
     success: false,
     message,
-    ...(!isProduction && { stack: err.stack }), // only expose stack trace in dev
+    ...(!isProduction && { stack: err.stack }),
   });
 });
 
