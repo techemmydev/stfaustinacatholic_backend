@@ -5,6 +5,7 @@ import {
   authenticateAdmin,
   requireAdminOrAbove,
   requireSuperAdmin,
+  requireWorkingHours,
 } from "../middleware/adminAuth.js";
 import { verifyAdmin } from "../middleware/Verifyadmin.js";
 
@@ -19,6 +20,7 @@ import {
   deleteAdmin,
   getCurrentAdmin,
   changePassword,
+  toggleEmergencyAccess,
 } from "../controllers/adminController.js";
 
 import {
@@ -372,5 +374,14 @@ router.delete("/contact/:id", authenticateAdmin, deleteContactById);
 router.get("/donations/initialize", authenticateAdmin, getAllDonationsAdmin);
 router.get("/donations/stats", authenticateAdmin, getDonationStats);
 router.delete("/donations/:id", authenticateAdmin, deleteDonation);
+
+// Super Admin only — grant/revoke emergency access
+router.patch(
+  "/users/:id/emergency-access",
+  authenticateAdmin,
+  requireSuperAdmin,
+  toggleEmergencyAccess,
+  requireWorkingHours,
+);
 
 export default router;

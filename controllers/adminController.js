@@ -260,3 +260,36 @@ export const getCurrentAdmin = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+// PATCH /api/admin/users/:id/emergency-access
+export const toggleEmergencyAccess = async (req, res) => {
+  try {
+    const { grant, expiryHours = 2 } = req.body; // default 2 hours
+
+    const update = grant
+      ? {
+          emergencyAccess: true,
+          emergencyAccessGrantedAt: new Date(),
+          emergencyAccessExpiresAt: new Date(
+            Date.now() + expiryHours * 60 * 60 * 1000,
+          ),
+        }
+      : {
+          emergencyAccess: false,
+          emergencyAccessGrantedAt: null,
+          emergencyAccessExpiresAt: null,
+        };
+
+    const admin = await Admin.findByIdAndUpdate(req.params.id, update, {
+      new: true,
+    }).select("-password");
+
+    res.status(200).json({
+      message: grant
+        ? `Emergency access granted for ${expiryHours} hours`
+        : "Emergency access revoked",
+      admin,
+    });
+  } catch (err) {
+    res.status(500).json({ message: "Server error" });
+  }
+};

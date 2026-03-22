@@ -24,6 +24,16 @@ const adminSchema = new mongoose.Schema(
       enum: ["Super Admin", "Admin", "Staff"],
       default: "Staff",
     },
+    emergencyAccess: {
+      type: Boolean,
+      default: false,
+    },
+    emergencyAccessGrantedAt: {
+      type: Date,
+    },
+    emergencyAccessExpiresAt: {
+      type: Date, // auto-expire after X hours
+    },
     status: {
       type: String,
       enum: ["Active", "Inactive"],
