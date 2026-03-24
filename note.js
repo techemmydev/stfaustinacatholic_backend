@@ -138,30 +138,16 @@ const router = express.Router();
 // ─────────────────────────────────────────────────────────────────────────────
 
 // ══════════════════════════════════════════════════════════════════════════════
-// PUBLIC — login only (no auth or working hours check)
-// POST   /api/admin/login
-// ══════════════════════════════════════════════════════════════════════════════
-router.post("/login", loginAdmin);
-
-// ══════════════════════════════════════════════════════════════════════════════
-// GLOBAL MIDDLEWARE — applied to every route below this line
-//
-// authenticateAdmin   → verifies JWT from cookie (desktop) or Bearer token (mobile)
-// requireWorkingHours → enforces Mon–Fri 7:30am–4:00pm WAT
-//                       Super Admin always bypasses
-//                       Admins with active emergency access also bypass
-// ══════════════════════════════════════════════════════════════════════════════
-router.use(authenticateAdmin, requireWorkingHours);
-
-// ══════════════════════════════════════════════════════════════════════════════
 // AUTH
+// POST   /api/admin/login
 // POST   /api/admin/logout
 // GET    /api/admin/me
 // PUT    /api/admin/change-password
 // ══════════════════════════════════════════════════════════════════════════════
-router.post("/logout", logoutAdmin);
-router.get("/me", getCurrentAdmin);
-router.put("/change-password", changePassword);
+router.post("/login", loginAdmin);
+router.post("/logout", authenticateAdmin, logoutAdmin);
+router.get("/me", authenticateAdmin, getCurrentAdmin);
+router.put("/change-password", authenticateAdmin, changePassword);
 
 // ══════════════════════════════════════════════════════════════════════════════
 // ADMIN PROFILE & SETTINGS
@@ -169,9 +155,9 @@ router.put("/change-password", changePassword);
 // PUT    /api/admin/profile
 // PUT    /api/admin/password
 // ══════════════════════════════════════════════════════════════════════════════
-router.get("/profile", verifyAdmin, getAdminProfile);
-router.put("/profile", updateAdminProfile);
-router.put("/password", updateAdminPassword);
+router.get("/profile", authenticateAdmin, verifyAdmin, getAdminProfile);
+router.put("/profile", authenticateAdmin, updateAdminProfile);
+router.put("/password", authenticateAdmin, updateAdminPassword);
 
 // ══════════════════════════════════════════════════════════════════════════════
 // ADMIN USER MANAGEMENT  (Super Admin only for create/delete/toggle)
@@ -179,19 +165,18 @@ router.put("/password", updateAdminPassword);
 // POST   /api/admin/users
 // PUT    /api/admin/users/:id
 // PATCH  /api/admin/users/:id/toggle-status
-// PATCH  /api/admin/users/:id/emergency-access  ← Super Admin only
 // DELETE /api/admin/users/:id
 // ══════════════════════════════════════════════════════════════════════════════
-router.get("/users", requireAdminOrAbove, getAllAdmins);
-router.post("/users", requireSuperAdmin, createAdmin);
-router.put("/users/:id", requireAdminOrAbove, updateAdmin);
-router.patch("/users/:id/toggle-status", requireSuperAdmin, toggleAdminStatus);
+router.get("/users", authenticateAdmin, requireAdminOrAbove, getAllAdmins);
+router.post("/users", authenticateAdmin, requireSuperAdmin, createAdmin);
+router.put("/users/:id", authenticateAdmin, requireAdminOrAbove, updateAdmin);
 router.patch(
-  "/users/:id/emergency-access",
+  "/users/:id/toggle-status",
+  authenticateAdmin,
   requireSuperAdmin,
-  toggleEmergencyAccess,
+  toggleAdminStatus,
 );
-router.delete("/users/:id", requireSuperAdmin, deleteAdmin);
+router.delete("/users/:id", authenticateAdmin, requireSuperAdmin, deleteAdmin);
 
 // ══════════════════════════════════════════════════════════════════════════════
 // PARISHIONERS
@@ -212,10 +197,14 @@ router.delete("/parishioners", deleteAllParishioners);
 // PATCH  /api/admin/appointments/:id/reject
 // DELETE /api/admin/appointments/:id
 // ══════════════════════════════════════════════════════════════════════════════
-router.get("/appointments", getAllAppointmentsAdmin);
-router.patch("/appointments/:id/approve", approveAppointment);
-router.patch("/appointments/:id/reject", rejectAppointment);
-router.delete("/appointments/:id", deleteAppointment);
+router.get("/appointments", authenticateAdmin, getAllAppointmentsAdmin);
+router.patch(
+  "/appointments/:id/approve",
+  authenticateAdmin,
+  approveAppointment,
+);
+router.patch("/appointments/:id/reject", authenticateAdmin, rejectAppointment);
+router.delete("/appointments/:id", authenticateAdmin, deleteAppointment);
 
 // ══════════════════════════════════════════════════════════════════════════════
 // TIME SLOTS
@@ -225,11 +214,11 @@ router.delete("/appointments/:id", deleteAppointment);
 // PATCH  /api/admin/time-slots/:id
 // DELETE /api/admin/time-slots/:id
 // ══════════════════════════════════════════════════════════════════════════════
-router.get("/time-slots", getAllSlotsForDate);
-router.post("/time-slots", createSlot);
-router.post("/time-slots/bulk", createBulkSlots); // must be before /:id
-router.patch("/time-slots/:id", updateSlot);
-router.delete("/time-slots/:id", deleteSlot);
+router.get("/time-slots", authenticateAdmin, getAllSlotsForDate);
+router.post("/time-slots", authenticateAdmin, createSlot);
+router.post("/time-slots/bulk", authenticateAdmin, createBulkSlots); // must be before /:id
+router.patch("/time-slots/:id", authenticateAdmin, updateSlot);
+router.delete("/time-slots/:id", authenticateAdmin, deleteSlot);
 
 // ══════════════════════════════════════════════════════════════════════════════
 // MASS THANKSGIVING (BOOKINGS)
@@ -258,7 +247,7 @@ router.patch("/mass-schedules/:id/toggle-publish", toggleMassSchedulePublish);
 router.delete("/mass-schedules/:id", deleteMassSchedule);
 
 // ══════════════════════════════════════════════════════════════════════════════
-// MASSES
+// MASSES (individual mass instances / thanksgiving mass management)
 // POST   /api/admin/masses
 // POST   /api/admin/masses/bulk
 // PATCH  /api/admin/masses/:id
@@ -293,11 +282,11 @@ router.delete("/events/:id", deleteEvent);
 // PATCH  /api/admin/sermons/:id/toggle
 // DELETE /api/admin/sermons/:id
 // ══════════════════════════════════════════════════════════════════════════════
-router.get("/sermons", getAllSermonsAdmin);
-router.post("/sermons", createSermon);
-router.put("/sermons/:id", updateSermon);
-router.patch("/sermons/:id/toggle", toggleSermonPublished);
-router.delete("/sermons/:id", deleteSermon);
+router.get("/sermons", authenticateAdmin, getAllSermonsAdmin);
+router.post("/sermons", authenticateAdmin, createSermon);
+router.put("/sermons/:id", authenticateAdmin, updateSermon);
+router.patch("/sermons/:id/toggle", authenticateAdmin, toggleSermonPublished);
+router.delete("/sermons/:id", authenticateAdmin, deleteSermon);
 
 // ══════════════════════════════════════════════════════════════════════════════
 // GALLERY
@@ -307,11 +296,11 @@ router.delete("/sermons/:id", deleteSermon);
 // PATCH  /api/admin/gallery/:id/toggle
 // DELETE /api/admin/gallery/:id
 // ══════════════════════════════════════════════════════════════════════════════
-router.get("/gallery", getAllPhotosAdmin);
-router.post("/gallery", createPhoto);
-router.put("/gallery/:id", updatePhoto);
-router.patch("/gallery/:id/toggle", togglePhotoPublished);
-router.delete("/gallery/:id", deletePhoto);
+router.get("/gallery", authenticateAdmin, getAllPhotosAdmin);
+router.post("/gallery", authenticateAdmin, createPhoto);
+router.put("/gallery/:id", authenticateAdmin, updatePhoto);
+router.patch("/gallery/:id/toggle", authenticateAdmin, togglePhotoPublished);
+router.delete("/gallery/:id", authenticateAdmin, deletePhoto);
 
 // ══════════════════════════════════════════════════════════════════════════════
 // PRIESTS
@@ -321,11 +310,11 @@ router.delete("/gallery/:id", deletePhoto);
 // PATCH  /api/admin/togglepriest/:id
 // DELETE /api/admin/deletepriest/:id
 // ══════════════════════════════════════════════════════════════════════════════
-router.get("/fetchpriests", getAllPriestsAdmin);
-router.post("/createpriest", createPriest);
-router.put("/updatepriest/:id", updatePriest);
-router.patch("/togglepriest/:id", togglePriestActive);
-router.delete("/deletepriest/:id", deletePriest);
+router.get("/fetchpriests", authenticateAdmin, getAllPriestsAdmin);
+router.post("/createpriest", authenticateAdmin, createPriest);
+router.put("/updatepriest/:id", authenticateAdmin, updatePriest);
+router.patch("/togglepriest/:id", authenticateAdmin, togglePriestActive);
+router.delete("/deletepriest/:id", authenticateAdmin, deletePriest);
 
 // ══════════════════════════════════════════════════════════════════════════════
 // TESTIMONIALS
@@ -336,13 +325,18 @@ router.delete("/deletepriest/:id", deletePriest);
 // DELETE /api/admin/testimonials/:id
 // ══════════════════════════════════════════════════════════════════════════════
 router.get("/testimonials", getAllTestimonialsAdmin);
-router.patch("/testimonials/:id/approve", approveTestimonial);
-router.patch("/testimonials/:id/reject", rejectTestimonial);
+router.patch(
+  "/testimonials/:id/approve",
+  authenticateAdmin,
+  approveTestimonial,
+);
+router.patch("/testimonials/:id/reject", authenticateAdmin, rejectTestimonial);
 router.patch(
   "/testimonials/:id/toggle-visibility",
+  authenticateAdmin,
   toggleTestimonialVisibility,
 );
-router.delete("/testimonials/:id", deleteTestimonial);
+router.delete("/testimonials/:id", authenticateAdmin, deleteTestimonial);
 
 // ══════════════════════════════════════════════════════════════════════════════
 // INVITATIONS
@@ -358,17 +352,16 @@ router.delete("/invitations/:id", deleteInvitation);
 
 // ══════════════════════════════════════════════════════════════════════════════
 // CONTACTS
-// POST   /api/admin/contact
 // GET    /api/admin/contact
 // PATCH  /api/admin/contact/:id/read
 // PATCH  /api/admin/contact/:id/responded
 // DELETE /api/admin/contact/:id
 // ══════════════════════════════════════════════════════════════════════════════
 router.post("/contact", submitContact);
-router.get("/contact", getAllContacts);
-router.patch("/contact/:id/read", markAsRead);
-router.patch("/contact/:id/responded", markAsResponded);
-router.delete("/contact/:id", deleteContactById);
+router.get("/contact", authenticateAdmin, getAllContacts);
+router.patch("/contact/:id/read", authenticateAdmin, markAsRead);
+router.patch("/contact/:id/responded", authenticateAdmin, markAsResponded);
+router.delete("/contact/:id", authenticateAdmin, deleteContactById);
 
 // ══════════════════════════════════════════════════════════════════════════════
 // DONATIONS
@@ -378,8 +371,17 @@ router.delete("/contact/:id", deleteContactById);
 // GET    /api/admin/donations/stats       → aggregated stats
 // DELETE /api/admin/donations/:id
 // ══════════════════════════════════════════════════════════════════════════════
-router.get("/donations/initialize", getAllDonationsAdmin);
-router.get("/donations/stats", getDonationStats);
-router.delete("/donations/:id", deleteDonation);
+router.get("/donations/initialize", authenticateAdmin, getAllDonationsAdmin);
+router.get("/donations/stats", authenticateAdmin, getDonationStats);
+router.delete("/donations/:id", authenticateAdmin, deleteDonation);
+
+// Super Admin only — grant/revoke emergency access
+router.patch(
+  "/users/:id/emergency-access",
+  authenticateAdmin,
+  requireSuperAdmin,
+  toggleEmergencyAccess,
+  requireWorkingHours,
+);
 
 export default router;
