@@ -21,7 +21,7 @@ const isProduction = process.env.NODE_ENV === "production";
 // If CORS runs after helmet or body-parser, preflight OPTIONS
 // requests get rejected before the CORS headers are ever added.
 const allowedOrigins = [
-  // "http://localhost:5173",                // Vite dev — uncomment when developing locally
+  // "http://localhost:5173", // Vite dev — uncomment when developing locally
   "https://stfaustina-parish.vercel.app", // Live frontend
 ];
 
