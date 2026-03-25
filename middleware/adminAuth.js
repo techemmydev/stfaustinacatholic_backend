@@ -25,53 +25,47 @@ export const authenticateAdmin = (req, res, next) => {
   }
 };
 
-export const requireSuperAdmin = (req, res, next) => {
-  if (req.admin.role !== "Super Admin") {
-    return res.status(403).json({ message: "Super Admin access required" });
-  }
-  next();
-};
-
-export const requireAdminOrAbove = (req, res, next) => {
-  if (req.admin.role !== "Admin" && req.admin.role !== "Super Admin") {
-    return res.status(403).json({ message: "Admin access required" });
-  }
-  next();
-};
-// ── Time-based access control ──────────────────────────────────
-// Admin portal: Mon–Fri 7:30am–4:00pm WAT (UTC+1)
-// Super Admin always bypasses — he is the priest
-// Admins/Staff can be granted temporary emergency access by Super Admin
+// ── Working hours — reads fresh data from DB so emergency access works ────
 export const requireWorkingHours = async (req, res, next) => {
   try {
-    // ── Super Admin always has full access ──────────────────
+    // Super Admin always has full access
     if (req.admin?.role === "Super Admin") return next();
 
-    // ── Emergency access check with expiry validation ───────
-    if (req.admin?.emergencyAccess === true) {
-      const expiry = req.admin?.emergencyAccessExpiresAt;
+    // ── Fetch fresh admin data from DB ──────────────────────────
+    // JWT is signed at login time so emergencyAccess granted AFTER
+    // login won't be in the token — always check the DB instead
+    const admin = await Admin.findById(req.admin.id).select(
+      "emergencyAccess emergencyAccessExpiresAt role",
+    );
+
+    if (!admin) {
+      return res.status(401).json({ message: "Admin not found" });
+    }
+
+    // Check emergency access with expiry validation
+    if (admin.emergencyAccess === true) {
+      const expiry = admin.emergencyAccessExpiresAt;
       if (expiry && new Date() > new Date(expiry)) {
-        // Expired — silently revoke in background
+        // Expired — silently revoke
         await Admin.findByIdAndUpdate(req.admin.id, {
           emergencyAccess: false,
           emergencyAccessGrantedAt: null,
           emergencyAccessExpiresAt: null,
         });
-        // Fall through to time check below
+        // Fall through to time check
       } else {
-        return next(); // still valid — let them through
+        return next(); // valid emergency access
       }
     }
 
-    // ── Time check for everyone else ────────────────────────
+    // Time check WAT (UTC+1)
     const now = new Date();
-    const watTime = new Date(now.getTime() + 60 * 60 * 1000); // UTC+1 (WAT)
-
+    const watTime = new Date(now.getTime() + 60 * 60 * 1000);
     const day = watTime.getUTCDay();
     const minutes = watTime.getUTCHours() * 60 + watTime.getUTCMinutes();
 
-    const isWeekday = day >= 1 && day <= 5; // Mon–Fri
-    const isWorkingHours = minutes >= 450 && minutes < 960; // 7:30–16:00
+    const isWeekday = day >= 1 && day <= 5;
+    const isWorkingHours = minutes >= 450 && minutes < 960;
 
     if (!isWeekday || !isWorkingHours) {
       return res.status(403).json({
@@ -86,4 +80,18 @@ export const requireWorkingHours = async (req, res, next) => {
   } catch (error) {
     return res.status(500).json({ message: "Server error" });
   }
+};
+
+export const requireSuperAdmin = (req, res, next) => {
+  if (req.admin.role !== "Super Admin") {
+    return res.status(403).json({ message: "Super Admin access required" });
+  }
+  next();
+};
+
+export const requireAdminOrAbove = (req, res, next) => {
+  if (req.admin.role !== "Admin" && req.admin.role !== "Super Admin") {
+    return res.status(403).json({ message: "Admin access required" });
+  }
+  next();
 };

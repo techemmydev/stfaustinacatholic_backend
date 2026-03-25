@@ -88,6 +88,7 @@ import {
   updateMass,
   toggleMassStatus,
   deleteMass,
+  getAllMassesAdmin,
 } from "../controllers/Masscontroller.js";
 
 import {
@@ -266,6 +267,7 @@ router.delete("/mass-schedules/:id", deleteMassSchedule);
 // DELETE /api/admin/masses/:id
 // ══════════════════════════════════════════════════════════════════════════════
 router.post("/masses", createMass);
+router.get("/masses", getAllMassesAdmin);
 router.post("/masses/bulk", createBulkMasses); // must be before /:id
 router.patch("/masses/:id", updateMass);
 router.patch("/masses/:id/toggle-status", toggleMassStatus);
